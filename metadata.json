@@ -1,0 +1,5 @@
+{
+  "name": "Learning Coach Hub",
+  "description": "A dashboard for learning coaches to monitor student progress and generate personalized messages using AI.",
+  "requestFramePermissions": []
+}
