@@ -102,7 +102,7 @@ export function FileUpload({ onDataLoaded, onCancel }: FileUploadProps) {
   };
 
   const mapRowsToStudents = (rows: any[]): Student[] => {
-    const today = new Date('2026-03-24T00:00:00Z');
+    const today = new Date();
 
     return rows.map((row, index) => {
       const getValue = (possibleKeys: string[]) => {
