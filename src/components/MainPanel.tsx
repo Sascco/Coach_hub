@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Student, MessageHistoryItem } from '../types';
-import { GoogleGenAI } from '@google/genai';
 import { Copy, Check, Edit2, RefreshCw, Send } from 'lucide-react';
 
 interface MainPanelProps {
@@ -50,46 +49,28 @@ export function MainPanel({ student, onShowToast }: MainPanelProps) {
     const actualCat = cat === 'auto' ? autoCategory(s) : cat;
     const dl = s.daysSinceLesson < 0 ? 0 : s.daysSinceLesson;
 
-    const systemPrompt = `You are a Learning Coach at TripleTen, a tech bootcamp. You send personalized SMS messages to students to check in on their progress. 
-Your tone is warm, friendly, supportive, and encouraging — like a real person who genuinely cares.
-Write in English. Keep messages concise (under 320 characters ideally, though longer is fine for sprint resources). Use emojis sparingly but naturally.
-Never sound robotic or generic. Always address the student by their first name.
-Output ONLY the message text, no quotes, no labels, no explanation.`;
-
-    const catGuide: Record<string, string> = {
-      regular: "Write a warm weekly check-in message. Ask how they're doing, whether they've hit any obstacles, and remind them you're there to help.",
-      engagement: `The student has been inactive for ${dl} days without completing a lesson and ${s.daysSinceProject} days without submitting a project. Write a re-engagement message that is empathetic and curious — ask if everything is okay, acknowledge that life happens, and gently invite them back.`,
-      deadline: `The student is close to their sprint deadline. They are ${s.daysSinceProject} days since their last project submission and at ${s.progress}% progress. Write a motivating deadline reminder.`,
-      missed: "The student missed their deadline. Write a caring, non-judgmental check-in that acknowledges it, asks how they're doing, and offers support to get back on track. Mention MBG eligibility briefly.",
-      sprint: `Write a supportive message pointing the student to sprint resources for their current sprint: ${s.sprint}. Include encouragement and mention you're available for help.`,
-    };
-
-    const userPrompt = `Student first name: ${s.firstName}
-Current sprint: ${s.sprint}
-Sprint progress: ${s.progress}%
-Days since last lesson completed: ${dl}
-Days since last project submitted: ${s.daysSinceProject}
-Cohort start: ${s.cohortStart}
-
-Task: ${catGuide[actualCat] || catGuide.regular}`;
-
     try {
-      if (!process.env.GEMINI_API_KEY) {
-        throw new Error("GEMINI_API_KEY is not set. Please configure it in the AI Studio settings.");
-      }
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: userPrompt,
-        config: {
-          systemInstruction: systemPrompt,
-        }
+      const res = await fetch('/api/generate-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          firstName: s.firstName,
+          sprint: s.sprint,
+          progress: s.progress,
+          daysSinceLesson: dl,
+          daysSinceProject: s.daysSinceProject,
+          cohortStart: s.cohortStart,
+          category: actualCat,
+        }),
       });
-      
-      setGeneratedMessage(response.text || 'Could not generate message.');
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to generate message.');
+
+      setGeneratedMessage(data.message || 'Could not generate message.');
     } catch (e: any) {
       console.error(e);
-      setGeneratedMessage(`Error generating message: ${e?.message || String(e)}\n\nAPI Key available: ${!!process.env.GEMINI_API_KEY}`);
+      setGeneratedMessage(`Error generating message: ${e?.message || String(e)}`);
     } finally {
       setIsGenerating(false);
     }

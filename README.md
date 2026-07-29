@@ -39,6 +39,7 @@ Coach Hub turns that process into a repeatable, data-driven system.
 | Data parsing | PapaParse + SheetJS |
 | Icons | Lucide React |
 | Persistence | localStorage |
+| API server | Express (proxies Gemini calls so the API key never reaches the browser) |
 
 ---
 
@@ -79,7 +80,11 @@ GEMINI_API_KEY=your_key_here
 npm run dev
 ```
 
+This starts the Vite dev server (`:3000`) and the Express API server (`:3001`) together. The frontend never sees `GEMINI_API_KEY` — all Gemini calls go through `POST /api/generate-message` on the Express server, which is the only place the key is read.
+
 App runs at `http://localhost:3000`.
+
+For a production-style run: `npm run build` then `npm start` (Express serves the built frontend and the API from a single process).
 
 ---
 
